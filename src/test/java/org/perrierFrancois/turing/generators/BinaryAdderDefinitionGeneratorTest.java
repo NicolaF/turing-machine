@@ -20,7 +20,11 @@ class BinaryAdderDefinitionGeneratorTest {
     public void testAdder() {
         final int bits = 3;
 
+        System.out.println(format("Building %d-bits adder", bits));
         TuringMachineDefinition definition = BinaryAdderDefinitionGenerator.buildDefinition(bits);
+        System.out.println(format("Machine definition contains %d actions", definition.getActions().size()));
+        System.out.println();
+
         TuringMachine machine = new TuringMachine(definition);
 
         for (int a = 0; a < 1 << bits; a++) {

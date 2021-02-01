@@ -1,31 +1,31 @@
 package org.perrierFrancois.turing;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
+import lombok.*;
 import org.perrierFrancois.turing.definition.Action;
 import org.perrierFrancois.turing.definition.Move;
 import org.perrierFrancois.turing.definition.TuringMachineDefinition;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static java.lang.String.format;
 import static java.lang.System.lineSeparator;
-import static java.util.Collections.unmodifiableList;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toMap;
 
 public class TuringMachine {
     public static final String EMPTY_SYMBOL = "";
 
-    //// config
+    // config
     private final String initialState;
 
     private final Set<String> finalStates;
 
     private final Map<ActionKey, Runnable> actionTable;
 
-    //runtime
+    // runtime
     /**
      * Transitions counter (purely informal)
      */
@@ -135,24 +135,42 @@ public class TuringMachine {
         }
     }
 
-    public static class Tape {
+    public static class Tape implements Iterable<Cell> {
 
-        private final LinkedList<String> symbols;
+        private Cell currentCell;
+        private Cell firstCell;
 
+        //keep track of the position to avoid having to iterate on the whole tape to find where we are;
         @Getter
-        private int position;
+        private int position = 0;
 
         public Tape(List<String> initialState) {
-            this.symbols = new LinkedList<>(initialState);
-            if (symbols.isEmpty()) {
-                symbols.add(EMPTY_SYMBOL);
+            if (initialState.isEmpty()) {
+                firstCell = Cell.empty();
+            } else {
+                firstCell = Cell.of(initialState.get(0));
+                //noinspection ResultOfMethodCallIgnored
+                initialState.stream()
+                        .skip(1)
+                        .map(Cell::of)
+                        .reduce(firstCell, (prev, cur) -> {
+                            prev.next = cur;
+                            cur.prev = prev;
+                            return cur;
+                        });
             }
 
-            this.position = 0;
+            currentCell = firstCell;
         }
 
         public List<String> getSymbols() {
-            return unmodifiableList(symbols);
+            return this.stream()
+                    .map(Cell::getSymbol)
+                    .collect(Collectors.toList());
+        }
+
+        public int getPosition() {
+            return position;
         }
 
         private void move(Move move) {
@@ -161,42 +179,101 @@ public class TuringMachine {
                 case DONT_MOVE:
                     break;
                 case LEFT:
-                    if (position == 0) {
-                        symbols.addFirst(EMPTY_SYMBOL);
+                    if (currentCell.getPrev() == null) {
+                        currentCell.prev = Cell.empty();
+                        currentCell.prev.next = currentCell;
+                        firstCell = currentCell.getPrev();
                     } else {
                         position--;
                     }
+                    currentCell = currentCell.getPrev();
                     break;
                 case RIGHT:
-                    position++;
-                    if (position == symbols.size()) {
-                        symbols.addLast(EMPTY_SYMBOL);
+                    if (currentCell.getNext() == null) {
+                        currentCell.next = Cell.empty();
+                        currentCell.next.prev = currentCell;
                     }
+
+                    position++;
+
+                    currentCell = currentCell.getNext();
                     break;
             }
         }
 
         private String read() {
-            return symbols.get(position);
+            return currentCell.getSymbol();
         }
 
         private void write(String symbol) {
-            symbols.set(position, symbol);
+            currentCell.symbol = symbol;
         }
 
         @Override
         public String toString() {
-            int maxSymbolSize = Math.max(1, symbols.stream().mapToInt(String::length).max().orElse(0));
+            final List<String> symbols = getSymbols();
+
+            final int maxSymbolSize = Math.max(1, symbols.stream()
+                    .mapToInt(String::length)
+                    .max().orElse(0));
 
             final String format = "%" + maxSymbolSize + "s";
 
-            final String symbols = this.symbols.stream()
+            final String tape = symbols.stream()
                     .map(symbol -> format(format, symbol))
                     .collect(joining("|", "|", "|"));
 
             final String marker = format("%" + (position * (maxSymbolSize + 1) + 2) + "s", "^");
 
-            return symbols + "\n" + marker;
+            return tape + lineSeparator() + marker;
+        }
+
+        public Stream<Cell> stream() {
+            return StreamSupport.stream(spliterator(), false);
+        }
+
+        @Override
+        public Iterator<Cell> iterator() {
+            return new Iterator<>() {
+                private Cell next = firstCell;
+
+                @Override
+                public boolean hasNext() {
+                    return next != null;
+                }
+
+                @Override
+                public Cell next() {
+                    if (next == null) {
+                        throw new NoSuchElementException();
+                    }
+
+                    final Cell next = this.next;
+                    this.next = next.next;
+                    return next;
+                }
+            };
+        }
+    }
+
+    @Getter
+    @AllArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class Cell {
+        private String symbol;
+        private Cell next;
+        private Cell prev;
+
+        public static Cell of(String symbol) {
+            return new Cell(symbol, null, null);
+        }
+
+        public static Cell empty() {
+            return of(EMPTY_SYMBOL);
+        }
+
+        @Override
+        public String toString() {
+            return symbol;
         }
     }
 }

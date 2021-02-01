@@ -13,6 +13,9 @@ import java.util.function.IntFunction;
 
 import static org.perrierFrancois.turing.TuringMachine.EMPTY_SYMBOL;
 
+/**
+ * n bits adders Machine Definition generator
+ */
 @RequiredArgsConstructor(access = AccessLevel.PRIVATE)
 public class BinaryAdderDefinitionGenerator extends TuringMachineDefinitionGeneratorSupport {
 
@@ -22,6 +25,26 @@ public class BinaryAdderDefinitionGenerator extends TuringMachineDefinitionGener
 
     private final int bits;
 
+    /**
+     * Builds a Machine definition which computes the addition of two b-bits integers.<br/>
+     * <h1>Initial state</h1>
+     * The two numbers concatenated at the beginning of the tape, eg. to compute 2 + 3 with a 3bit adder:<br/>
+     * <pre>
+     * |0|1|0|0|1|1|
+     * </pre>
+     * <h1>Final state</h1>
+     * The result is written on <code>bits + 1</code> bits after the operands, eg:
+     * <pre>
+     * |0|1|0|0|1|1|0|1|0|1|
+     *              ^
+     * </pre>
+     * <h1>Complexity</h1>
+     * The generated Machine Definition contains <code></code> actions.<br/>
+     * The final state is reached after <code>4*bits^2 + 2*bits - 1</code> transitions.
+     *
+     * @param bits bit size of the operands
+     * @return the built machine definitions
+     */
     public static TuringMachineDefinition buildDefinition(int bits) {
         return new BinaryAdderDefinitionGenerator(bits).doBuildDefinition();
     }
@@ -62,8 +85,8 @@ public class BinaryAdderDefinitionGenerator extends TuringMachineDefinitionGener
     }
 
     private void fullAdder(List<Action> actions,
-                           Move directionToSecondOperand, int offsetToSecondOperand,
-                           Move directionToResult, int offsetToResult,
+                           @SuppressWarnings("SameParameterValue") Move directionToSecondOperand, int offsetToSecondOperand,
+                           @SuppressWarnings("SameParameterValue") Move directionToResult, int offsetToResult,
                            IntFunction<String> stateNameTemplate, boolean handleEmptyCarry, Move lastMove, String nextState) {
         //BRANCH 1: 0 + ?, C=?
         IntFunction<String> read0StateTemplate = i -> stateNameTemplate.apply(i + 1) + " (0 + ?, C=?)";

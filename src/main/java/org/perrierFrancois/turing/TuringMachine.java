@@ -26,11 +26,17 @@ public class TuringMachine {
     private final Map<ActionKey, Runnable> actionTable;
 
     //runtime
+    /**
+     * Transitions counter (purely informal)
+     */
+    @Getter
+    private int transitions;
+
     @Getter
     private MachineState machineState;
 
     @Getter
-    private Ribbon ribbon;
+    private Tape tape;
 
     @Getter
     private String internalState;
@@ -46,21 +52,22 @@ public class TuringMachine {
     }
 
     public void reset() {
+        this.transitions = 0;
         this.internalState = this.initialState;
-        this.ribbon = null;
+        this.tape = null;
         this.machineState = MachineState.READY;
     }
 
     public void initialize(List<String> ribbon) {
         assertState(MachineState.READY);
-        this.ribbon = new Ribbon(ribbon);
+        this.tape = new Tape(ribbon);
         this.machineState = MachineState.RUNNING;
     }
 
     public void nextStep() {
         assertState(MachineState.RUNNING);
 
-        final String currentSymbol = ribbon.read();
+        final String currentSymbol = tape.read();
         final Runnable action = actionTable.get(ActionKey.of(internalState, currentSymbol));
 
         if (action == null) {
@@ -76,8 +83,8 @@ public class TuringMachine {
         String result = "Machine state:  " + machineState.name() + lineSeparator() +
                 "Internal state: " + internalState + lineSeparator();
 
-        if (ribbon != null) {
-            result += lineSeparator() + ribbon.toString();
+        if (tape != null) {
+            result += lineSeparator() + tape.toString();
         }
 
         return result;
@@ -115,23 +122,27 @@ public class TuringMachine {
 
         @Override
         public void run() {
-            ribbon.write(symbolToWrite);
-            ribbon.move(move);
+            tape.write(symbolToWrite);
+
+            tape.move(move);
+
             internalState = nextState;
+            transitions++;
+
             if (finalStates.contains(internalState)) {
                 machineState = MachineState.ACCEPTED;
             }
         }
     }
 
-    public static class Ribbon {
+    public static class Tape {
 
         private final LinkedList<String> symbols;
 
         @Getter
         private int position;
 
-        public Ribbon(List<String> initialState) {
+        public Tape(List<String> initialState) {
             this.symbols = new LinkedList<>(initialState);
             if (symbols.isEmpty()) {
                 symbols.add(EMPTY_SYMBOL);

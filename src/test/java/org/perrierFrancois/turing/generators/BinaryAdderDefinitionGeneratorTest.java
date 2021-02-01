@@ -18,7 +18,7 @@ class BinaryAdderDefinitionGeneratorTest {
 
     @Test
     public void testAdder() {
-        final int bits = 3;
+        final int bits = 8;
 
         System.out.println(format("Building %d-bits adder", bits));
         TuringMachineDefinition definition = BinaryAdderDefinitionGenerator.buildDefinition(bits);
@@ -36,10 +36,10 @@ class BinaryAdderDefinitionGeneratorTest {
                         a, b
                 ));
                 machine.reset();
-                machine.initialize(buildRibbon(bits, a, b));
+                machine.initialize(buildTape(bits, a, b));
                 run(machine);
                 final int result = assertResult(machine, bits, a, b);
-                System.out.println(format("%d + %d = %d", a, b, result));
+                System.out.println(format("%d + %d = %d (%d transitions)", a, b, result, machine.getTransitions()));
             }
         }
     }
@@ -54,7 +54,7 @@ class BinaryAdderDefinitionGeneratorTest {
         }
     }
 
-    private List<String> buildRibbon(int bits, int a, int b) {
+    private List<String> buildTape(int bits, int a, int b) {
         List<String> ribbon = new ArrayList<>();
         ribbon.addAll(buildNumber(a, bits));
         ribbon.addAll(buildNumber(b, bits));
@@ -69,7 +69,7 @@ class BinaryAdderDefinitionGeneratorTest {
 
     private int assertResult(TuringMachine machine, int bits, int a, int b) {
         assertThat(machine.getMachineState()).isEqualTo(MachineState.ACCEPTED);
-        final Integer result = machine.getRibbon().getSymbols().subList(2 * bits, 3 * bits + 1).stream()
+        final Integer result = machine.getTape().getSymbols().subList(2 * bits, 3 * bits + 1).stream()
                 .collect(collectingAndThen(Collectors.joining(), s -> Integer.valueOf(s, 2)));
 
         assertThat(result).isEqualTo(a + b);

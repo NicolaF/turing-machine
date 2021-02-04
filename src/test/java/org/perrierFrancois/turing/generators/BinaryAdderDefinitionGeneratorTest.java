@@ -30,9 +30,11 @@ class BinaryAdderDefinitionGeneratorTest {
         for (int a = 0; a < 1 << bits; a++) {
             for (int b = 0; b < 1 << bits; b++) {
                 System.out.println(format(
-                        "##############################################\n" +
-                                "#            Computing %3d + %3d             #\n" +
-                                "##############################################",
+                        //@formatter:off
+                        "###################################################\n" +
+                        "#               Computing %3d + %3d               #\n" +
+                        "###################################################",
+                        //@formatter:on
                         a, b
                 ));
                 machine.reset();
@@ -49,7 +51,7 @@ class BinaryAdderDefinitionGeneratorTest {
 
         while (!turingMachine.getMachineState().isFinal()) {
             turingMachine.nextStep();
-            System.out.println("##############################################");
+            System.out.println("###################################################");
             System.out.println(turingMachine.toString());
         }
     }
@@ -69,7 +71,7 @@ class BinaryAdderDefinitionGeneratorTest {
 
     private int assertResult(TuringMachine machine, int bits, int a, int b) {
         assertThat(machine.getMachineState()).isEqualTo(MachineState.ACCEPTED);
-        assertThat(machine.getTape().getPosition()).isEqualTo(2*bits);
+        assertThat(machine.getTape().getPosition()).isEqualTo(2 * bits);
 
         final Integer result = machine.getTape().getSymbols().subList(2 * bits, 3 * bits + 1).stream()
                 .collect(collectingAndThen(Collectors.joining(), s -> Integer.valueOf(s, 2)));
